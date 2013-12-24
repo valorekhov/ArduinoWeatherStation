@@ -11,6 +11,8 @@
 #define DHTPIN 4     // what pin we're connected to
 DHT dht;
 
+#define XBEESLEEPPIN 2
+
 // Connect pin 1 (on the left) of the sensor to +5V
 // Connect pin 2 ouf the sensor to whatever your DHTPIN is
 // Connect pin 4 (on the right) of the sensor to GROUND
@@ -21,6 +23,9 @@ Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 1234
 int sample=0;
 
 void setup() {
+  pinMode( LEDPIN , OUTPUT);
+  pinMode( XBEESLEEPPIN , OUTPUT);
+  
   Serial.begin(57600); 
   dht.setup(DHTPIN);
   
@@ -36,15 +41,13 @@ void setup() {
     Serial.print("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
     while(1);
   }
-  
-  /* Setup the sensor gain and integration time */
-  configureLightSensor();
-  
-
 }
 
 void loop() {
   digitalWrite(LEDPIN, HIGH);
+  digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
+
+  configureLightSensor();
    
   Serial.print("{'_sensor': 'weather', '_sample': {'_id':"); 
   Serial.print(sample++); 
@@ -97,9 +100,9 @@ void loop() {
   Serial.println("}}");
   
   digitalWrite(LEDPIN, LOW);
+  digitalWrite(XBEESLEEPPIN, HIGH);  //Put XBEE to sleep
   
-  //delay(15000);
-  Narcoleptic.delay(30000);
+  sleep(30000);
 }
 
 void configureLightSensor(void)
@@ -115,3 +118,19 @@ void configureLightSensor(void)
   tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_402MS);  /* 16-bit data but slowest conversions */
 }
 
+void sleep(long milliseconds)
+{
+   while(milliseconds > 0)
+   {
+      if(milliseconds > 8000)
+      {
+         milliseconds -= 8000;
+         Narcoleptic.delay(8000);
+      }
+      else
+      {
+        Narcoleptic.delay(milliseconds);
+        break;
+      }
+   }
+}
