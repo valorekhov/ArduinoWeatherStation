@@ -81,7 +81,6 @@ void loop() {
     blink(10);
     digitalWrite(LEDPIN, LOW);
     digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
-
     sleep(60000); 
     return;
   }
@@ -90,45 +89,26 @@ void loop() {
   Serial.print(sample); 
   Serial.print(", "); 
   
-  float h = dht.getHumidity();
-  float t = dht.getTemperature();
-
-  // check if returns are valid, if they are NaN (not a number) then something went wrong!
-  if (!isnan(t) && !isnan(h)) {
-   if (!isnan(t)){
-    Serial.print("'Temp':"); 
-    Serial.print(t);
-    Serial.print(", ");
-   }
-   if (!isnan(h)){
-    Serial.print("'RH':"); 
-    Serial.print(h);
-    Serial.print(", ");
-   }
-  } 
+  Serial.print("'Temp':"); printValue(dht.getTemperature());
+  Serial.print("'RH':"); printValue(dht.getHumidity());
   
   sensors_event_t event;
   bmp.getEvent(&event); 
-  Serial.print("'AtmoPressure':");
-  if (event.pressure)
-  {
-     Serial.print(event.pressure); Serial.print(", ");
-  }
-  else
-  {
-    Serial.print("'NaN', ");
-  }
+  Serial.print("'AtmoPressure':"); printValue(event.pressure);
   
+  uint16_t broadband = 0;
+  uint16_t infrared = 0;
+ 
   tsl.getEvent(&event); 
-  Serial.print("'AmbientLight':"); 
-  if (event.light)
-  {
-    Serial.print(event.light); Serial.print(", ");
+  long lx = event.light;
+  tsl.getLuminosity (&broadband, &infrared);
+  if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
+      lx = 0xFFFF;
   }
-  else
-  {
-    Serial.print("'NaN' ");
-  }
+  Serial.print("'AmbientLight':"); printValue(lx);
+  Serial.print("'BroadbandLight':"); printValue(broadband);
+  Serial.print("'Infrared':"); printValue(infrared);
+
   Serial.println("}}");
   
   delay(2000);   //Delay at the end to allow xbee to flush its send buffer 
@@ -139,6 +119,16 @@ void loop() {
   sleep(60000);
 }
 
+void printValue(long value){
+  if (!isnan(value))
+  {
+    Serial.print(value); Serial.print(", ");
+  }
+  else
+  {
+    Serial.print("'NaN', ");
+  }
+}
 
 int pingCoordinator(void){
     
