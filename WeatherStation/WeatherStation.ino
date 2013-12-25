@@ -106,8 +106,8 @@ void loop() {
       lx = 0xFFFF;
   }
   Serial.print("'AmbientLight':"); printValue(lx);
-  Serial.print("'BroadbandLight':"); printValue(broadband);
-  Serial.print("'Infrared':"); printValue(infrared);
+  Serial.print("'BroadbandLight':"); printValue((long)broadband);
+  Serial.print("'Infrared':"); printValue((long)infrared);
 
   Serial.println("}}");
   
@@ -117,6 +117,17 @@ void loop() {
   digitalWrite(XBEESLEEPPIN, HIGH);  //Put XBEE to sleep
   
   sleep(60000);
+}
+
+void printValue(float value){
+  if (!isnan(value))
+  {
+    Serial.print(value); Serial.print(", ");
+  }
+  else
+  {
+    Serial.print("'NaN', ");
+  }
 }
 
 void printValue(long value){
