@@ -80,7 +80,9 @@ void loop() {
   if (!pingCoordinator()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
     blink(10);
     digitalWrite(LEDPIN, LOW);
-    sleep(10000); 
+    digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
+
+    sleep(60000); 
     return;
   }
 
