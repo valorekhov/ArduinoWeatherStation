@@ -13,10 +13,6 @@ DHT dht;
 
 #define XBEESLEEPPIN 2
 
-// Connect pin 1 (on the left) of the sensor to +5V
-// Connect pin 2 ouf the sensor to whatever your DHTPIN is
-// Connect pin 4 (on the right) of the sensor to GROUND
-// Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
 Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
 Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
 
@@ -85,16 +81,16 @@ void loop() {
     return;
   }
 
-  Serial.print("{'_sensor': 'weather', '_sample': {'_id':"); 
+  Serial.print("{\"_sensor\": \"weather\", \"_sample\": {\"_id\":"); 
   Serial.print(sample); 
   Serial.print(", "); 
   
-  Serial.print("'Temp':"); printValue(dht.getTemperature());
-  Serial.print("'RH':"); printValue(dht.getHumidity());
+  Serial.print("\"Temp\":"); printValue(dht.getTemperature());
+  Serial.print("\"RH\":"); printValue(dht.getHumidity());
   
   sensors_event_t event;
   bmp.getEvent(&event); 
-  Serial.print("'AtmoPressure':"); printValue(event.pressure);
+  Serial.print("\"AtmoPressure\":"); printValue(event.pressure);
   
   uint16_t broadband = 0;
   uint16_t infrared = 0;
@@ -105,9 +101,9 @@ void loop() {
   if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
       lx = 0xFFFF;
   }
-  Serial.print("'AmbientLight':"); printValue(lx);
-  Serial.print("'BroadbandLight':"); printValue((long)broadband);
-  Serial.print("'Infrared':"); printValue((long)infrared);
+  Serial.print("\"AmbientLight\":"); printValue(lx);
+  Serial.print("\"BroadbandLight\":"); printValue((long)broadband);
+  Serial.print("\"Infrared\":"); printValue((long)infrared, 0);
 
   Serial.println("}}");
   
@@ -131,13 +127,21 @@ void printValue(float value){
 }
 
 void printValue(long value){
+  printValue(value, 1);
+}
+
+void printValue(long value, short separator){
   if (!isnan(value))
   {
-    Serial.print(value); Serial.print(", ");
+    Serial.print(value); 
   }
   else
   {
-    Serial.print("'NaN', ");
+    Serial.print("'NaN'");
+  }
+  
+  if (separator){
+    Serial.print(", ");
   }
 }
 
@@ -160,30 +164,6 @@ int pingCoordinator(void){
     }
     return 0;
 }
-/*
-    Wake up the XBEE from sleep. 
-    For hibernation periods longer than 10sec, or so, XBee will have to re-join the PAN. 
-    Use ATMY command to confirm that the node got its network address before attempting to send data to DH/DL 
-*/
-/*
-int wakeUpXbee(void){
-    while(getCh() != NULL) ;       //Drain any pending messages on the serial.
-    
-    Serial.print("+++");
-    delay(500);
-    if (getCh()=='O' && getCh()=='K'){
-        for(int j=0; j<5; j++){
-          Serial.println("ATMY");
-          if (!(getCh()=='F' && getCh()=='F' && getCh()=='F' & getCh()=='E')){
-             Serial.println("ATCN");  //Got non-FFFE address. Exit command mode immediately.
-             return 1;
-          }
-          delay(1000);
-        }
-    }
-  return 0;
-}
-*/
 
 char getCh(){
   if (Serial.available()){
