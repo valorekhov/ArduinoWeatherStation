@@ -63,7 +63,7 @@ void blink(int times, int delayValue){
 
 void loop() {
   digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
-  delay(2000);
+  delay(4000);
 
   blink(25, 50);
   digitalWrite(LEDPIN, LOW);  
@@ -73,46 +73,43 @@ void loop() {
 
   sample += 1;
 
-  if (!pingCoordinator()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
-    blink(10);
-    digitalWrite(LEDPIN, LOW);
-    digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
-    sleep(60000); 
-    return;
+  if (!pingDestination()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
+    blink(50, 100);
+  } else {                          //connected to the destination
+    
+    Serial.print("{\"__device\": \"weather\", \"__sample\": {\"__id\":"); 
+    Serial.print(sample); 
+    Serial.print(", "); 
+    
+    Serial.print("\"Temp\":"); printValue(dht.getTemperature());
+    Serial.print("\"RH\":"); printValue(dht.getHumidity());
+    
+    sensors_event_t event;
+    bmp.getEvent(&event); 
+    Serial.print("\"AtmoPressure\":"); printValue(event.pressure);
+    
+    uint16_t broadband = 0;
+    uint16_t infrared = 0;
+   
+    tsl.getEvent(&event); 
+    long lx = event.light;
+    tsl.getLuminosity (&broadband, &infrared);
+    if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
+        lx = 0xFFFF;
+    }
+    Serial.print("\"AmbientLight\":"); printValue(lx);
+    Serial.print("\"BroadbandLight\":"); printValue((long)broadband);
+    Serial.print("\"Infrared\":"); printValue((long)infrared, 0);
+  
+    Serial.println("}}");
+    
+    delay(2000);   //Delay at the end to allow xbee to flush its send buffer 
   }
-
-  Serial.print("{\"_sensor\": \"weather\", \"_sample\": {\"_id\":"); 
-  Serial.print(sample); 
-  Serial.print(", "); 
-  
-  Serial.print("\"Temp\":"); printValue(dht.getTemperature());
-  Serial.print("\"RH\":"); printValue(dht.getHumidity());
-  
-  sensors_event_t event;
-  bmp.getEvent(&event); 
-  Serial.print("\"AtmoPressure\":"); printValue(event.pressure);
-  
-  uint16_t broadband = 0;
-  uint16_t infrared = 0;
- 
-  tsl.getEvent(&event); 
-  long lx = event.light;
-  tsl.getLuminosity (&broadband, &infrared);
-  if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
-      lx = 0xFFFF;
-  }
-  Serial.print("\"AmbientLight\":"); printValue(lx);
-  Serial.print("\"BroadbandLight\":"); printValue((long)broadband);
-  Serial.print("\"Infrared\":"); printValue((long)infrared, 0);
-
-  Serial.println("}}");
-  
-  delay(2000);   //Delay at the end to allow xbee to flush its send buffer 
 
   digitalWrite(LEDPIN, LOW);
   digitalWrite(XBEESLEEPPIN, HIGH);  //Put XBEE to sleep
   
-  sleep(60000);
+  sleep(150000);
 }
 
 void printValue(float value){
@@ -122,7 +119,7 @@ void printValue(float value){
   }
   else
   {
-    Serial.print("'NaN', ");
+    Serial.print("null, ");
   }
 }
 
@@ -137,7 +134,7 @@ void printValue(long value, short separator){
   }
   else
   {
-    Serial.print("'NaN'");
+    Serial.print("null");
   }
   
   if (separator){
@@ -145,15 +142,15 @@ void printValue(long value, short separator){
   }
 }
 
-int pingCoordinator(void){
+int pingDestination(void){
     
-    for(int i = 0; i<10; i++){
-      blink(i);
+    for(int i = 0; i<5; i++){
+      blink(i+1);
       while(getCh() != NULL) ;       //Drain any pending chars on the serial.
       Serial.println("@PING");
       int c=0;
       while(Serial.available()<2 && c++<10){
-          delay(400);
+          delay(200);
           blink(2, 50);
       }
       if (getCh()=='O' && getCh()=='K'){
