@@ -63,19 +63,19 @@ void blink(int times, int delayValue){
 
 void loop() {
   digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
-  delay(4000);
+//  delay(4000);
 
-  blink(25, 50);
-  digitalWrite(LEDPIN, LOW);  
-  delay(1000);
+  blink(10, 50);                    //1 sec delay on wake up to allow the sample to be sent
+//  digitalWrite(LEDPIN, LOW);  
+//  delay(1000);
 
   digitalWrite(LEDPIN, HIGH);  
 
   sample += 1;
 
-  if (!pingDestination()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
-    blink(50, 100);
-  } else {                          //connected to the destination
+//  if (!pingDestination()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
+//    blink(50, 100);
+//  } else {                          //connected to the destination
     
     Serial.print("{\"__device\": \"weather\", \"__sample\": {\"__id\":"); 
     Serial.print(sample); 
@@ -117,7 +117,7 @@ void loop() {
   
     Serial.println("}}");
     
-    delay(2000);   //Delay at the end to allow xbee to flush its send buffer 
+    delay(500);   //Delay at the end to allow xbee to flush its send buffer 
   }
 
   digitalWrite(LEDPIN, LOW);
@@ -156,6 +156,8 @@ void printValue(long value, short separator){
   }
 }
 
+
+/*
 int pingDestination(void){
     
     for(int i = 0; i<10; i++){
@@ -182,6 +184,7 @@ char getCh(){
   }
   return NULL;
 }
+*/
 
 void configureLightSensor(void)
 {
