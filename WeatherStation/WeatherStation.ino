@@ -81,8 +81,22 @@ void loop() {
     Serial.print(sample); 
     Serial.print(", "); 
     
-    Serial.print("\"Temp\":"); printValue(dht.getTemperature());
+    float bmpTemperature;
+    float dhtTemperature = dht.getTemperature();
+    bmp.getTemperature(&bmpTemperature);
+    
+    Serial.print("\"Temp\":"); printValue(bmpTemperature);
+    Serial.print("\"Temp2\":"); printValue(dhtTemperature);
     Serial.print("\"RH\":"); printValue(dht.getHumidity());
+    
+    float tempAvg = NAN;
+    if (!isnan(dhtTemperature) && !isnan(bmpTemperature)){
+       tempAvg = (dhtTemperature + bmpTemperature) / 2;
+    } else if (!isnan(bmpTemperature)){
+      tempAvg = bmpTemperature;
+    }
+    Serial.print("\"EqualizedTemp\":"); printValue( tempAvg );
+
     
     sensors_event_t event;
     bmp.getEvent(&event); 
@@ -144,13 +158,13 @@ void printValue(long value, short separator){
 
 int pingDestination(void){
     
-    for(int i = 0; i<5; i++){
+    for(int i = 0; i<10; i++){
       blink(i+1);
       while(getCh() != NULL) ;       //Drain any pending chars on the serial.
       Serial.println("@PING");
       int c=0;
       while(Serial.available()<2 && c++<10){
-          delay(200);
+          delay(100);
           blink(2, 50);
       }
       if (getCh()=='O' && getCh()=='K'){
