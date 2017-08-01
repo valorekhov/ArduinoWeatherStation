@@ -63,128 +63,85 @@ void blink(int times, int delayValue){
 
 void loop() {
   digitalWrite(XBEESLEEPPIN, LOW);  //Wake UP XBEE
-//  delay(4000);
+  delay(5000);
 
   blink(10, 50);                    //1 sec delay on wake up to allow the sample to be sent
-//  digitalWrite(LEDPIN, LOW);  
-//  delay(1000);
 
   digitalWrite(LEDPIN, HIGH);  
 
-  sample += 1;
-
-//  if (!pingDestination()){          //check if xbee woke up and got its association address. blink LED rapidly and quit loop otherwise
-//    blink(50, 100);
-//  } else {                          //connected to the destination
-    
-    Serial.print("{\"__device\": \"weather\", \"__sample\": {\"__id\":"); 
-    Serial.print(sample); 
-    Serial.print(", "); 
-    
-    float bmpTemperature;
-    float dhtTemperature = dht.getTemperature();
-    bmp.getTemperature(&bmpTemperature);
-    
-    Serial.print("\"Temp\":"); printValue(bmpTemperature);
-    Serial.print("\"Temp2\":"); printValue(dhtTemperature);
-    Serial.print("\"RH\":"); printValue(dht.getHumidity());
-    
-    float tempAvg = NAN;
-    if (!isnan(dhtTemperature) && !isnan(bmpTemperature)){
-       tempAvg = (dhtTemperature + bmpTemperature) / 2;
-    } else if (!isnan(bmpTemperature)){
-      tempAvg = bmpTemperature;
-    }
-    Serial.print("\"EqualizedTemp\":"); printValue( tempAvg );
-
-    
-    sensors_event_t event;
-    bmp.getEvent(&event); 
-    Serial.print("\"AtmoPressure\":"); printValue(event.pressure);
-    
-    uint16_t broadband = 0;
-    uint16_t infrared = 0;
-   
-    tsl.getEvent(&event); 
-    long lx = event.light;
-    tsl.getLuminosity (&broadband, &infrared);
-    if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
-        lx = 0xFFFF;
-    }
-    Serial.print("\"AmbientLight\":"); printValue(lx);
-    Serial.print("\"BroadbandLight\":"); printValue((long)broadband);
-    Serial.print("\"Infrared\":"); printValue((long)infrared, 0);
+  Serial.print("EXW: SID="); 
+  Serial.print(sample++); 
+  Serial.print(" "); 
   
-    Serial.println("}}");
-    
-    delay(500);   //Delay at the end to allow xbee to flush its send buffer 
+  float bmpTemperature;
+  float dhtTemperature = dht.getTemperature();
+  bmp.getTemperature(&bmpTemperature);
+  
+  Serial.print("T1="); printValue(bmpTemperature);
+  Serial.print("T2="); printValue(dhtTemperature);
+  Serial.print("RH="); printValue(dht.getHumidity());
+  
+  float tempAvg = NAN;
+  if (!isnan(dhtTemperature) && !isnan(bmpTemperature)){
+     tempAvg = (dhtTemperature + bmpTemperature) / 2;
+  } else if (!isnan(bmpTemperature)){
+    tempAvg = bmpTemperature;
   }
+  Serial.print("T="); printValue( tempAvg );
+
+  
+  sensors_event_t event;
+  bmp.getEvent(&event); 
+  Serial.print("P="); printValue(event.pressure);
+  
+  uint16_t broadband = 0;
+  uint16_t infrared = 0;
+ 
+  tsl.getEvent(&event); 
+  long lx = event.light;
+  tsl.getLuminosity (&broadband, &infrared);
+  if (lx == 0 && broadband > 65000){ //Sensor appears to be in direct sunlight outside it's resolution limits. Set lx value to max to simplify downstream logic
+      lx = 0xFFFF;
+  }
+
+  if (lx != 0xFFFF && broadband != 0xFFFF && infrared != 0xFFFF){ //If sensor is not connected, all values are 0xFFFF
+    Serial.print("AL="); printValue(lx);
+    Serial.print("BL="); printValue((long)broadband);
+    Serial.print("IR="); printValue((long)infrared);
+  }
+  Serial.print("\n");
+
+  delay(1500);   //Delay at the end to allow xbee to flush its send buffer 
 
   digitalWrite(LEDPIN, LOW);
   digitalWrite(XBEESLEEPPIN, HIGH);  //Put XBEE to sleep
   
-  sleep(150000);
+  sleep(600000);
 }
 
 void printValue(float value){
   if (!isnan(value))
   {
-    Serial.print(value); Serial.print(", ");
+    Serial.print(value); 
+    Serial.print(" ");
   }
   else
   {
-    Serial.print("null, ");
+    Serial.print("NaN ");
   }
 }
 
 void printValue(long value){
-  printValue(value, 1);
-}
-
-void printValue(long value, short separator){
   if (!isnan(value))
   {
     Serial.print(value); 
+    Serial.print(" ");
   }
   else
   {
-    Serial.print("null");
-  }
-  
-  if (separator){
-    Serial.print(", ");
+    Serial.print("NaN ");
   }
 }
-
-
-/*
-int pingDestination(void){
-    
-    for(int i = 0; i<10; i++){
-      blink(i+1);
-      while(getCh() != NULL) ;       //Drain any pending chars on the serial.
-      Serial.println("@PING");
-      int c=0;
-      while(Serial.available()<2 && c++<10){
-          delay(100);
-          blink(2, 50);
-      }
-      if (getCh()=='O' && getCh()=='K'){
-          //while(getCh() != NULL) ;       //Drain any pending messages on the serial.
-          return 1;
-      }
-      delay(500);
-    }
-    return 0;
-}
-
-char getCh(){
-  if (Serial.available()){
-    return Serial.read();
-  }
-  return NULL;
-}
-*/
 
 void configureLightSensor(void)
 {
