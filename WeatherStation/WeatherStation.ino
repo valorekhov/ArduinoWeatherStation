@@ -43,9 +43,9 @@ void setup() {
   
   configureLightSensor();
   
-  //Delay for 30 sec at startup after a manual RST to allow for the wireless programmer to transition 
+  //Delay for 15 sec at startup after a manual RST to allow for the wireless programmer to transition 
   // the board into the bootloader, or change other XBEE settings remotely, c.f. disable pin sleep mode to keep the XBEE up
-  blink(30, 500);
+  blink(15, 500);
 }
 
 void blink(int times){
